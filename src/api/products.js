@@ -1,7 +1,7 @@
 import apiClient from './axios'
 
 export const productsApi = {
-    getAll: () => apiClient.get('/products'),
+    getAll: (page = 1, limit = 10, search = '') => apiClient.get(`/products?page=${page}&limit=${limit}&search=${search}`),
     getById: (id) => apiClient.get(`/products/${id}`),
     getByCategory: (categoryId) => apiClient.get(`/products/category/${categoryId}`),
     getByBrand: (brandId) => apiClient.get(`/products/brand/${brandId}`),

@@ -197,6 +197,57 @@
         </table>
       </div>
     </AppCard>
+
+    <!-- Pagination Controls -->
+    <div 
+      v-if="pagination.total > 0 && isServerPagination" 
+      class="flex items-center justify-between bg-white px-4 py-3 border border-slate-200 rounded-lg shadow-sm"
+    >
+      <div class="flex flex-1 justify-between sm:hidden">
+        <button 
+          @click="prevPage" 
+          :disabled="pagination.page === 1"
+          class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Anterior
+        </button>
+        <button 
+          @click="nextPage" 
+          :disabled="pagination.page === pagination.lastPage"
+          class="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Siguiente
+        </button>
+      </div>
+      <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-slate-700">
+            Mostrando página <span class="font-medium">{{ pagination.page }}</span> de <span class="font-medium">{{ pagination.lastPage }}</span>
+            (Total: <span class="font-medium">{{ pagination.total }}</span> registros)
+          </p>
+        </div>
+        <div>
+          <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+            <button 
+              @click="prevPage"
+              :disabled="pagination.page === 1"
+              class="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+            >
+              <span class="sr-only">Anterior</span>
+              <ChevronLeftIcon class="h-5 w-5" aria-hidden="true" />
+            </button>
+            <button 
+              @click="nextPage"
+              :disabled="pagination.page === pagination.lastPage"
+              class="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+            >
+              <span class="sr-only">Siguiente</span>
+              <ChevronRightIcon class="h-5 w-5" aria-hidden="true" />
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -218,7 +269,9 @@ import {
   XMarkIcon,
   EyeIcon,
   PencilIcon,
-  TrashIcon
+  TrashIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
@@ -228,6 +281,17 @@ const products = ref([])
 const loading = ref(false)
 const categoryOptions = ref([])
 const brandOptions = ref([])
+
+// Pagination state
+const pagination = ref({
+  page: 1,
+  limit: 10,
+  total: 0,
+  lastPage: 1
+})
+
+// Track if we are in "Server Pagination Mode" (no cat/brand filters)
+const isServerPagination = computed(() => !filters.category && !filters.brand)
 
 const stockStatusOptions = [
   { value: '', label: 'Todos los estados' },
@@ -246,9 +310,9 @@ const filters = reactive({
 let searchTimeout = null
 
 const filteredProducts = computed(() => {
-  let result = products.value
+  let result = products.value || []
 
-  // Filter by stock status
+  // Client-side stock filter is valid for both modes
   if (filters.stockStatus) {
     result = result.filter(p => {
       if (filters.stockStatus === 'out_of_stock') return p.stock === 0
@@ -257,44 +321,69 @@ const filteredProducts = computed(() => {
       return true
     })
   }
-
+  
+  // NOTE: If using category/brand filters, they return ALL products, so no pagination needed yet.
+  // If no filters, we have server pagination content in 'products.value'.
+  
   return result
 })
 
 const handleSearch = () => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
+    // Reset to page 1 on search
+    pagination.value.page = 1
     loadProducts()
   }, 300)
 }
 
-const loadProducts = async () => {
+const loadProducts = async (page = 1) => {
   loading.value = true
   try {
     let response
 
     if (filters.category) {
       response = await productsApi.getByCategory(filters.category)
+      // Standardize response structure: array of products
+      products.value = response.data.data
+      pagination.value.total = products.value.length
+      pagination.value.lastPage = 1
     } else if (filters.brand) {
       response = await productsApi.getByBrand(filters.brand)
+      products.value = response.data.data
+      pagination.value.total = products.value.length
+      pagination.value.lastPage = 1
     } else {
-      response = await productsApi.getAll()
-    }
-
-    products.value = response.data.data
-
-    // Apply search filter
-    if (filters.search) {
-      products.value = products.value.filter(p =>
-        p.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        p.sku?.toLowerCase().includes(filters.search.toLowerCase())
-      )
+      // Server-side pagination and search
+      response = await productsApi.getAll(page, pagination.value.limit, filters.search)
+      products.value = response.data.data.data || []
+      
+      // Update meta
+      pagination.value = {
+        page: Number(response.data.data.meta.page),
+        limit: 10,
+        total: Number(response.data.data.meta.total),
+        lastPage: Number(response.data.data.meta.lastPage)
+      }
     }
   } catch (err) {
     console.error('Error loading products:', err)
     error(err.customMessage || err.message || 'Error al cargar productos')
+    products.value = []
   } finally {
     loading.value = false
+  }
+}
+
+const prevPage = () => {
+  if (pagination.value.page > 1) {
+    loadProducts(pagination.value.page - 1)
+  }
+}
+
+const nextPage = () => {
+  if (pagination.value.page < pagination.value.lastPage) {
+    loadProducts(pagination.value.page + 1)
   }
 }
 

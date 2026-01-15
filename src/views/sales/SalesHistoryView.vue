@@ -16,6 +16,7 @@
             v-model="searchQuery"
             placeholder="Buscar por cliente o ID de venta..."
             class="w-full"
+            @input="handleSearch"
           >
             <template #prefix>
               <MagnifyingGlassIcon class="w-5 h-5 text-slate-400" />
@@ -26,6 +27,7 @@
           <input
             type="date"
             v-model="dateFilter"
+            @change="handleDateFilter"
             class="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-sm text-slate-700"
           />
         </div>
@@ -90,6 +92,54 @@
         </table>
       </div>
     </AppCard>
+
+    <!-- Pagination Controls -->
+    <div class="flex items-center justify-between bg-white px-4 py-3 border border-slate-200 rounded-lg shadow-sm">
+      <div class="flex flex-1 justify-between sm:hidden">
+        <button 
+          @click="prevPage" 
+          :disabled="pagination.page === 1"
+          class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Anterior
+        </button>
+        <button 
+          @click="nextPage" 
+          :disabled="pagination.page === pagination.lastPage"
+          class="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Siguiente
+        </button>
+      </div>
+      <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-slate-700">
+            Mostrando página <span class="font-medium">{{ pagination.page }}</span> de <span class="font-medium">{{ pagination.lastPage }}</span>
+            (Total: <span class="font-medium">{{ pagination.total }}</span> registros)
+          </p>
+        </div>
+        <div>
+          <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+            <button 
+              @click="prevPage"
+              :disabled="pagination.page === 1"
+              class="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+            >
+              <span class="sr-only">Anterior</span>
+              <ChevronLeftIcon class="h-5 w-5" aria-hidden="true" />
+            </button>
+            <button 
+              @click="nextPage"
+              :disabled="pagination.page === pagination.lastPage"
+              class="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+            >
+              <span class="sr-only">Siguiente</span>
+              <ChevronRightIcon class="h-5 w-5" aria-hidden="true" />
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
 
     <!-- Details Modal -->
     <Teleport to="body">
@@ -187,33 +237,38 @@ import {
   DocumentMagnifyingGlassIcon 
 } from '@heroicons/vue/24/outline'
 
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
+
 const { error } = useToast()
 const sales = ref([])
 const searchQuery = ref('')
 const dateFilter = ref('')
 const selectedSale = ref(null)
+let searchTimeout = null
+
+const pagination = ref({
+  page: 1,
+  limit: 10,
+  total: 0,
+  lastPage: 1
+})
 
 const filteredSales = computed(() => {
-  return sales.value.filter(sale => {
-    // Text Filter
-    const query = searchQuery.value.toLowerCase()
-    const matchesText = 
-      sale.id.toString().includes(query) ||
-      (sale.customer && (
-        sale.customer.firstName.toLowerCase().includes(query) || 
-        sale.customer.lastName.toLowerCase().includes(query)
-      ))
-    
-    // Date Filter
-    let matchesDate = true
-    if (dateFilter.value) {
-      const saleDate = new Date(sale.createdAt).toISOString().split('T')[0]
-      matchesDate = saleDate === dateFilter.value
-    }
-
-    return matchesText && matchesDate
-  })
+  return sales.value || []
 })
+
+const handleSearch = () => {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    pagination.value.page = 1
+    loadSales()
+  }, 300)
+}
+
+const handleDateFilter = () => {
+  pagination.value.page = 1
+  loadSales()
+}
 
 const formatDate = (dateString) => {
   const date = new Date(dateString)
@@ -232,14 +287,34 @@ const closeDetails = () => {
   selectedSale.value = null
 }
 
-const loadSales = async () => {
+const loadSales = async (page = 1) => {
   try {
-    const { data } = await salesApi.getAll()
-    // Sort descending by date
-    sales.value = data.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    const { data } = await salesApi.getAll(page, pagination.value.limit, searchQuery.value, dateFilter.value)
+    sales.value = data.data.data || []
+    
+    // Update pagination meta
+    pagination.value = {
+      page: Number(data.data.meta.page),
+      limit: 10,
+      total: Number(data.data.meta.total),
+      lastPage: Number(data.data.meta.lastPage)
+    }
   } catch (err) {
     console.error('Error loading sales:', err)
     error(err.message || 'Error al cargar ventas')
+    sales.value = []
+  }
+}
+
+const prevPage = () => {
+  if (pagination.value.page > 1) {
+    loadSales(pagination.value.page - 1)
+  }
+}
+
+const nextPage = () => {
+  if (pagination.value.page < pagination.value.lastPage) {
+    loadSales(pagination.value.page + 1)
   }
 }
 

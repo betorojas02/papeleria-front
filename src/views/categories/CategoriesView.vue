@@ -24,7 +24,7 @@
           </thead>
           <tbody>
             <tr
-              v-for="category in categories"
+              v-for="category in paginatedCategories"
               :key="category.id"
               class="border-b border-slate-100 hover:bg-slate-50 transition-colors"
             >
@@ -63,6 +63,57 @@
       </div>
     </AppCard>
 
+    <!-- Pagination Controls -->
+    <div 
+      v-if="categories.length > itemsPerPage" 
+      class="flex items-center justify-between bg-white px-4 py-3 border border-slate-200 rounded-lg shadow-sm"
+    >
+      <div class="flex flex-1 justify-between sm:hidden">
+        <button 
+          @click="prevPage" 
+          :disabled="currentPage === 1"
+          class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Anterior
+        </button>
+        <button 
+          @click="nextPage" 
+          :disabled="currentPage === totalPages"
+          class="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Siguiente
+        </button>
+      </div>
+      <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-slate-700">
+            Mostrando página <span class="font-medium">{{ currentPage }}</span> de <span class="font-medium">{{ totalPages }}</span>
+            (Total: <span class="font-medium">{{ categories.length }}</span> registros)
+          </p>
+        </div>
+        <div>
+          <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+            <button 
+              @click="prevPage"
+              :disabled="currentPage === 1"
+              class="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+            >
+              <span class="sr-only">Anterior</span>
+              <ChevronLeftIcon class="h-5 w-5" aria-hidden="true" />
+            </button>
+            <button 
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+            >
+              <span class="sr-only">Siguiente</span>
+              <ChevronRightIcon class="h-5 w-5" aria-hidden="true" />
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal Create/Edit -->
     <AppModal 
       :is-open="showModal" 
@@ -92,14 +143,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { categoriesApi } from '@/api/categories'
 import { useToast } from '@/composables/useToast'
 import AppCard from '@/components/common/AppCard.vue'
 import AppButton from '@/components/common/AppButton.vue'
 import AppInput from '@/components/common/AppInput.vue'
 import AppModal from '@/components/common/AppModal.vue'
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, PencilIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 
 const { success, error } = useToast()
 
@@ -108,6 +159,26 @@ const loading = ref(false)
 const showModal = ref(false)
 const modalMode = ref('create') // 'create' | 'edit'
 const editingCategory = ref(null)
+
+// Pagination (Client Side)
+const currentPage = ref(1)
+const itemsPerPage = 10
+
+const paginatedCategories = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return categories.value.slice(start, end)
+})
+
+const totalPages = computed(() => Math.ceil(categories.value.length / itemsPerPage))
+
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++
+}
 
 const form = reactive({
   name: '',

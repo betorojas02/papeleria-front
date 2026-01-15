@@ -19,6 +19,7 @@
             v-model="search"
             type="text"
             placeholder="Buscar por proveedor o factura..."
+            @input="handleSearch"
             class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-shadow"
           />
           <MagnifyingGlassIcon class="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -83,6 +84,54 @@
         </table>
       </div>
     </AppCard>
+
+    <!-- Pagination Controls -->
+    <div class="flex items-center justify-between bg-white px-4 py-3 border border-slate-200 rounded-lg shadow-sm">
+      <div class="flex flex-1 justify-between sm:hidden">
+        <button 
+          @click="prevPage" 
+          :disabled="pagination.page === 1"
+          class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Anterior
+        </button>
+        <button 
+          @click="nextPage" 
+          :disabled="pagination.page === pagination.lastPage"
+          class="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Siguiente
+        </button>
+      </div>
+      <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-slate-700">
+            Mostrando página <span class="font-medium">{{ pagination.page }}</span> de <span class="font-medium">{{ pagination.lastPage }}</span>
+            (Total: <span class="font-medium">{{ pagination.total }}</span> registros)
+          </p>
+        </div>
+        <div>
+          <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+            <button 
+              @click="prevPage"
+              :disabled="pagination.page === 1"
+              class="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+            >
+              <span class="sr-only">Anterior</span>
+              <ChevronLeftIcon class="h-5 w-5" aria-hidden="true" />
+            </button>
+            <button 
+              @click="nextPage"
+              :disabled="pagination.page === pagination.lastPage"
+              class="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+            >
+              <span class="sr-only">Siguiente</span>
+              <ChevronRightIcon class="h-5 w-5" aria-hidden="true" />
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -92,32 +141,65 @@ import { purchasesApi } from '@/api/purchases'
 import { useToast } from '@/composables/useToast'
 import AppButton from '@/components/common/AppButton.vue'
 import AppCard from '@/components/common/AppCard.vue'
-import { MagnifyingGlassIcon, ArchiveBoxXMarkIcon } from '@heroicons/vue/24/outline'
+import { MagnifyingGlassIcon, ArchiveBoxXMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
+
 
 const { error } = useToast()
 const purchases = ref([])
 const loading = ref(false)
 const search = ref('')
+let searchTimeout = null
 
-const filteredPurchases = computed(() => {
-  if (!search.value) return purchases.value
-  const q = search.value.toLowerCase()
-  return purchases.value.filter(p => 
-    p.supplier?.name?.toLowerCase().includes(q) ||
-    p.invoiceNumber?.toLowerCase().includes(q)
-  )
+const pagination = ref({
+  page: 1,
+  limit: 10,
+  total: 0,
+  lastPage: 1
 })
 
-const loadPurchases = async () => {
+const filteredPurchases = computed(() => {
+  return purchases.value || []
+})
+
+const handleSearch = () => {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    pagination.value.page = 1
+    loadPurchases()
+  }, 300)
+}
+
+const loadPurchases = async (page = 1) => {
   loading.value = true
   try {
-    const { data } = await purchasesApi.getAll()
-    purchases.value = data.data
+    const { data } = await purchasesApi.getAll(page, pagination.value.limit, search.value)
+    purchases.value = data.data.data
+    
+    // Update meta
+    pagination.value = {
+      page: Number(data.data.meta.page),
+      limit: 10,
+      total: Number(data.data.meta.total),
+      lastPage: Number(data.data.meta.lastPage)
+    }
   } catch (err) {
     console.error(err)
     error('Error al cargar historial de compras')
+    purchases.value = []
   } finally {
     loading.value = false
+  }
+}
+
+const prevPage = () => {
+  if (pagination.value.page > 1) {
+    loadPurchases(pagination.value.page - 1)
+  }
+}
+
+const nextPage = () => {
+  if (pagination.value.page < pagination.value.lastPage) {
+    loadPurchases(pagination.value.page + 1)
   }
 }
 
