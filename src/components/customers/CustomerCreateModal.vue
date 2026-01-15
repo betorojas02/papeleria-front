@@ -8,7 +8,7 @@
       <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <!-- Header -->
         <div class="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-          <h3 class="text-xl font-bold text-slate-800">Nuevo Cliente</h3>
+          <h3 class="text-xl font-bold text-slate-800">{{ isEdit ? 'Editar Cliente' : 'Nuevo Cliente' }}</h3>
           <button @click="$emit('close')" class="text-slate-400 hover:text-slate-600 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -82,7 +82,7 @@
               class="flex-1 py-3 rounded-xl bg-primary-600 text-white font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/30 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <span v-if="loading" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-              <span>Guardar Cliente</span>
+              <span>{{ isEdit ? 'Guardar Cambios' : 'Guardar Cliente' }}</span>
             </button>
           </div>
         </form>
@@ -92,18 +92,24 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { customersApi } from '@/api/customers'
 import { useToast } from '@/composables/useToast'
 
 const props = defineProps({
-  show: Boolean
+  show: Boolean,
+  customer: {
+    type: Object,
+    default: null
+  }
 })
 
-const emit = defineEmits(['close', 'created'])
+const emit = defineEmits(['close', 'created', 'updated'])
 const { success, error } = useToast()
 
 const loading = ref(false)
+const isEdit = computed(() => !!props.customer)
+
 const form = reactive({
   firstName: '',
   lastName: '',
@@ -112,18 +118,36 @@ const form = reactive({
   phone: ''
 })
 
+watch(() => props.customer, (newVal) => {
+  if (newVal) {
+    form.firstName = newVal.firstName
+    form.lastName = newVal.lastName
+    form.documentNumber = newVal.documentNumber
+    form.email = newVal.email
+    form.phone = newVal.phone
+  } else {
+    // Reset if null (Create mode)
+    Object.keys(form).forEach(key => form[key] = '')
+  }
+}, { immediate: true })
+
 const handleSubmit = async () => {
   loading.value = true
   try {
-    const { data } = await customersApi.create(form)
-    success('✅ Cliente creado exitosamente')
-    emit('created', data)
+    if (isEdit.value) {
+      const { data } = await customersApi.update(props.customer.id, form)
+      success('✅ Cliente actualizado exitosamente')
+      emit('updated', data.data || data)
+    } else {
+      const { data } = await customersApi.create(form)
+      success('✅ Cliente creado exitosamente')
+      emit('created', data.data || data)
+    }
     emit('close')
-    // Reset form
-    Object.keys(form).forEach(key => form[key] = '')
+    if (!isEdit.value) Object.keys(form).forEach(key => form[key] = '')
   } catch (err) {
-    console.error('Error creating customer:', err)
-    error(err.response?.data?.message || 'Error al crear cliente')
+    console.error('Error saving customer:', err)
+    error(err.response?.data?.message || 'Error al guardar cliente')
   } finally {
     loading.value = false
   }

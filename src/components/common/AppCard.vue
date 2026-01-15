@@ -1,7 +1,9 @@
 <template>
   <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-    <div v-if="title" class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-      <h3 class="text-lg font-bold text-slate-800 tracking-tight">{{ title }}</h3>
+    <div v-if="title || $slots.header" class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+      <slot name="header">
+        <h3 class="text-lg font-bold text-slate-800 tracking-tight">{{ title }}</h3>
+      </slot>
     </div>
     
     <div class="p-6">

@@ -4,6 +4,22 @@
     <div class="flex-1 flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
       <!-- Search & Categories Header -->
       <div class="p-4 border-b border-slate-100 space-y-4">
+        <!-- Register Info Bar -->
+        <div v-if="currentRegister" class="flex items-center justify-between bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100 mb-2">
+          <div class="flex items-center gap-2">
+             <div class="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+             </div>
+             <div>
+                <p class="text-[10px] uppercase font-bold text-emerald-600 leading-none">Dinero en Caja</p>
+                <p class="text-sm font-black text-emerald-800 leading-tight">${{ (currentRegister.currentBalance || currentRegister.openingAmount)?.toLocaleString() }}</p>
+             </div>
+          </div>
+          <span class="text-[10px] font-medium text-emerald-600 bg-white px-2 py-0.5 rounded border border-emerald-100">
+            Turno Activo
+          </span>
+        </div>
+
         <!-- Search -->
         <div class="relative">
           <input
@@ -133,16 +149,25 @@
             <div class="flex items-center bg-slate-50 rounded-lg p-0.5 border border-slate-200">
               <button 
                 @click="cartStore.updateQuantity(item.id, item.quantity - 1)"
-                class="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm text-slate-600 transition-all"
+                class="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm text-slate-600 transition-all disabled:opacity-30"
+                :disabled="item.quantity <= 1"
               >
                 <MinusIcon class="w-3 h-3" />
               </button>
-              <span class="w-8 text-center text-xs font-bold text-slate-700">{{ item.quantity }}</span>
+              
+              <input 
+                type="number" 
+                v-model.number="item.quantity"
+                @change="cartStore.updateQuantity(item.id, item.quantity)"
+                class="w-10 text-center text-xs font-bold text-slate-700 bg-transparent border-none p-0 focus:ring-0 appearance-none -moz-appearance-textfield [&::-webkit-inner-spin-button]:appearance-none"
+                min="1"
+                :max="item.stock"
+              />
+              
               <button 
                 @click="cartStore.updateQuantity(item.id, item.quantity + 1)"
-                class="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm text-primary-600 transition-all"
+                class="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm text-primary-600 transition-all disabled:opacity-50"
                 :disabled="item.quantity >= item.stock"
-                :class="{ 'opacity-50': item.quantity >= item.stock }"
               >
                 <PlusIcon class="w-3 h-3" />
               </button>
@@ -192,9 +217,25 @@
     <PaymentDrawer
       :show="showPaymentDrawer"
       :ticket="currentTicket"
+      :cash-balance="currentRegister?.currentBalance || currentRegister?.openingAmount || 0"
       @close="showPaymentDrawer = false"
       @complete="handlePaymentComplete"
     />
+    <!-- Cash Register Block Overlay -->
+    <div v-if="!currentRegister && !loading" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 text-center">
+        <div class="mb-6">
+          <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900">Caja Cerrada</h2>
+          <p class="text-slate-500 mt-2">Para realizar ventas, primero debes abrir un turno de caja.</p>
+        </div>
+        
+        <!-- Reuse the component but handle style override via wrapper if needed, or just let it render its buttons -->
+        <CashRegisterStatus @status-changed="handleRegisterStatusChange" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -215,6 +256,7 @@ import {
   MinusIcon,
   TrashIcon,
 } from '@heroicons/vue/24/outline'
+import CashRegisterStatus from '@/components/dashboard/CashRegisterStatus.vue'
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -313,8 +355,9 @@ const handlePaymentComplete = async (paymentData) => {
     showPaymentDrawer.value = false
     currentTicket.value = null
     
-    // Reload current view products
+    // Reload current view products and register stats
     selectCategory(selectedCategory.value)
+    loadCashRegister()
     
     success('✅ Venta completada exitosamente')
   } catch (err) {
@@ -344,12 +387,19 @@ const loadCashRegister = async () => {
     if (data.data.length > 0) {
       currentRegister.value = data.data[0]
     } else {
-      error('⚠️ No hay caja abierta. Por favor abre una caja primero.')
-      router.push('/cash-register')
+      currentRegister.value = null
+      // No redirect, just let the template handle the overlay
     }
   } catch (err) {
     console.error('Error loading cash register:', err)
-    error(err.customMessage || err.message || 'Error al cargar caja registradora')
+  }
+}
+
+const handleRegisterStatusChange = (isOpen) => {
+  if (isOpen) {
+    loadCashRegister()
+  } else {
+    currentRegister.value = null
   }
 }
 

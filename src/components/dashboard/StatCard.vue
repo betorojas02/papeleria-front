@@ -73,6 +73,14 @@ const colorClasses = {
     value: 'text-danger-900',
     icon: 'text-danger-600',
     iconBg: 'bg-danger-100'
+  },
+  info: {
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
+    label: 'text-blue-600',
+    value: 'text-blue-900',
+    icon: 'text-blue-600',
+    iconBg: 'bg-blue-100'
   }
 }
 

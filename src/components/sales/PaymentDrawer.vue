@@ -63,19 +63,36 @@
               </label>
               
               <!-- Selected Customer Card -->
-              <div v-if="selectedCustomer" class="flex items-center justify-between p-3 bg-primary-50 border border-primary-100 rounded-xl relative group">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-full bg-white text-primary-600 flex items-center justify-center font-bold text-sm border border-primary-100">
-                    {{ selectedCustomer.firstName[0] }}{{ selectedCustomer.lastName[0] }}
-                  </div>
-                  <div>
-                    <p class="font-bold text-slate-800 text-sm">{{ selectedCustomer.firstName }} {{ selectedCustomer.lastName }}</p>
-                    <p class="text-xs text-slate-500">{{ selectedCustomer.documentNumber || 'Sin documento' }}</p>
-                  </div>
+              <!-- Selected Customer Card -->
+              <div v-if="selectedCustomer" class="bg-primary-50 border border-primary-100 rounded-xl overflow-hidden relative group">
+                <!-- Header / Label -->
+                <div class="bg-primary-100/50 px-3 py-1 flex justify-between items-center">
+                  <span class="text-[10px] font-bold text-primary-700 uppercase tracking-wider flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    Cliente Asignado
+                  </span>
                 </div>
-                <button @click="removeCustomer" class="p-2 text-slate-400 hover:text-red-500 transition-colors">
-                  <XMarkIcon class="w-5 h-5" />
-                </button>
+                
+                <div class="p-3 flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-white text-primary-600 flex items-center justify-center font-bold text-sm border border-primary-100 shadow-sm">
+                      {{ selectedCustomer.firstName?.[0] || '?' }}{{ selectedCustomer.lastName?.[0] || '' }}
+                    </div>
+                    <div>
+                      <p class="font-bold text-slate-800 text-sm">{{ selectedCustomer.firstName }} {{ selectedCustomer.lastName }}</p>
+                      <p class="text-xs text-slate-500 font-mono">{{ selectedCustomer.documentNumber || 'Sin documento' }}</p>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    @click="removeCustomer" 
+                    class="pl-4 border-l border-primary-200 text-slate-400 hover:text-red-500 transition-colors flex flex-col items-center gap-1"
+                    title="Desvincular cliente"
+                  >
+                    <XMarkIcon class="w-5 h-5" />
+                    <span class="text-[9px] font-bold uppercase">Quitar</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Search Input -->
@@ -174,6 +191,14 @@
                   <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                   <span>Monto insuficiente. Deberás agregar otro pago por ${{ (remainingAmount - cashReceived).toLocaleString() }}</span>
                 </div>
+
+                <div v-if="calculateChange > cashBalance" class="mt-2 text-xs font-bold text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100 flex items-center gap-2 animate-pulse">
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <div>
+                    <p>¡No hay suficiente dinero en caja para dar vueltas!</p>
+                    <p class="font-normal mt-0.5 text-[10px]">Disponible: ${{ cashBalance.toLocaleString() }} | Requerido: ${{ calculateChange.toLocaleString() }}</p>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -266,10 +291,10 @@
         <div class="p-6 bg-white border-t border-slate-100 shrink-0 shadow-[0_-4px_20px_-1px_rgba(0,0,0,0.05)] z-20">
           <button
             @click="finalizeSale"
-            :disabled="remainingAmount > 0"
+            :disabled="remainingAmount > 0 || (selectedMethod === 'cash' && calculateChange > cashBalance)"
             :class="[
               'w-full py-4 rounded-xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-3',
-              remainingAmount <= 0
+              remainingAmount <= 0 && !(selectedMethod === 'cash' && calculateChange > cashBalance)
                 ? 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-500/30'
                 : 'bg-slate-100 text-slate-400 cursor-not-allowed'
             ]"
@@ -306,7 +331,11 @@ const { success, error } = useToast()
 
 const props = defineProps({
   show: Boolean,
-  ticket: Object
+  ticket: Object,
+  cashBalance: {
+    type: Number,
+    default: 0
+  }
 })
 
 const emit = defineEmits(['close', 'complete'])
@@ -420,13 +449,32 @@ const getMethodLabel = (methodId) => {
   return paymentMethods.find(m => m.id === methodId)?.label
 }
 
+const selectCustomer = (customer) => {
+  selectedCustomer.value = customer
+  customerSearch.value = ''
+  showDropdown.value = false
+}
+
+const removeCustomer = () => {
+  selectedCustomer.value = null
+}
+
+const handleCustomerCreated = (newCustomer) => {
+  selectedCustomer.value = newCustomer
+}
+
 const finalizeSale = () => {
   if (remainingAmount.value > 0) return
+  if (selectedMethod.value === 'cash' && calculateChange.value > props.cashBalance) {
+    error('❌ No tienes suficiente dinero en caja para dar el cambio')
+    return
+  }
   
   emit('complete', {
     ticketId: props.ticket.id,
     payments: payments.value,
-    totalPaid: totalPaid.value
+    totalPaid: totalPaid.value,
+    customerId: selectedCustomer.value?.id || null
   })
   
   // Reset
