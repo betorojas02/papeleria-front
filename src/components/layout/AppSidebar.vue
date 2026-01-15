@@ -91,6 +91,8 @@ import {
   ChartBarIcon,
   CurrencyDollarIcon,
   Squares2X2Icon,
+  TruckIcon,
+  ClipboardDocumentCheckIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -111,6 +113,8 @@ const menuGroups = computed(() => {
         { name: 'Productos', to: '/products', icon: ShoppingBagIcon },
         { name: 'Categorías', to: '/categories', icon: Squares2X2Icon },
         { name: 'Marcas', to: '/brands', icon: TagIcon },
+        { name: 'Proveedores', to: '/suppliers', icon: TruckIcon },
+        { name: 'Compras', to: '/purchases', icon: ClipboardDocumentCheckIcon },
       ]
     },
     {

@@ -35,6 +35,25 @@
           format="currency"
           :footer="`${currentPeriodLabel}`"
         />
+        
+        <StatCard
+          label="Gastos Operativos"
+          :value="stats.totalExpenses"
+          :icon="CreditCardIcon"
+          variant="warning"
+          format="currency"
+          :footer="`${currentPeriodLabel}`"
+        />
+
+        <StatCard
+          label="Utilidad Neta"
+          :value="stats.netProfit"
+          :icon="CurrencyDollarIcon"
+          :variant="stats.netProfit >= 0 ? 'success' : 'danger'"
+          format="currency"
+          :footer="`${currentPeriodLabel}`"
+        />
+
         <!-- Additional KPI: Ticket Promedio -->
         <StatCard
           label="Ticket Promedio"
@@ -246,7 +265,8 @@ import {
   CurrencyDollarIcon,
   ShoppingBagIcon,
   ExclamationTriangleIcon,
-  ReceiptPercentIcon
+  ReceiptPercentIcon,
+  CreditCardIcon
 } from '@heroicons/vue/24/outline'
 
 const { error } = useToast()
@@ -254,6 +274,8 @@ const { error } = useToast()
 const stats = reactive({
   totalSales: 0,
   totalRevenue: 0,
+  totalExpenses: 0,
+  netProfit: 0,
   totalProducts: 0,
   lowStockProducts: 0
 })

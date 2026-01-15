@@ -48,6 +48,21 @@ const router = createRouter({
                     component: () => import('@/views/brands/BrandsView.vue'),
                 },
                 {
+                    path: 'suppliers',
+                    name: 'suppliers',
+                    component: () => import('@/views/suppliers/SuppliersView.vue'),
+                },
+                {
+                    path: 'purchases',
+                    name: 'purchases',
+                    component: () => import('@/views/purchases/PurchasesListView.vue'),
+                },
+                {
+                    path: 'purchases/create',
+                    name: 'purchases-create',
+                    component: () => import('@/views/purchases/CreatePurchaseView.vue'),
+                },
+                {
                     path: 'customers',
                     name: 'customers',
                     component: () => import('@/views/customers/CustomersView.vue'),
