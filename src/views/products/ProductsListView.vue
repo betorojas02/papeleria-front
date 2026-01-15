@@ -119,7 +119,7 @@
               
               <!-- Price -->
               <td class="py-3 px-4 text-right">
-                <span class="font-bold text-slate-800">${{ product.price.toLocaleString() }}</span>
+                <span class="font-bold text-slate-800">{{ formatCurrency(product.price) }}</span>
               </td>
               
               <!-- Stock -->
@@ -255,6 +255,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { useCurrency } from '@/composables/useCurrency'
 import { productsApi } from '@/api/products'
 import { categoriesApi } from '@/api/categories'
 import { brandsApi } from '@/api/brands'
@@ -276,6 +277,7 @@ import {
 
 const authStore = useAuthStore()
 const { success, error } = useToast()
+const { formatCurrency } = useCurrency()
 
 const products = ref([])
 const loading = ref(false)

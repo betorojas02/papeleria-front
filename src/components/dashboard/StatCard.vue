@@ -25,6 +25,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useCurrency } from '@/composables/useCurrency'
 
 const props = defineProps({
   label: String,
@@ -40,6 +41,8 @@ const props = defineProps({
     default: 'number' // 'number' | 'currency'
   }
 })
+
+const { formatCurrency } = useCurrency()
 
 const colorClasses = {
   primary: {
@@ -86,7 +89,7 @@ const colorClasses = {
 
 const formattedValue = computed(() => {
   if (props.format === 'currency') {
-    return `$${Number(props.value).toLocaleString()}`
+    return formatCurrency(props.value)
   }
   return props.value
 })

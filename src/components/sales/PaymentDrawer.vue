@@ -184,19 +184,19 @@
                 <!-- Change Display -->
                 <div class="mt-3 flex justify-between items-center px-2">
                   <span class="text-sm font-bold text-emerald-700">Cambio / Devuelta:</span>
-                  <span class="text-xl font-black text-emerald-600">${{ calculateChange.toLocaleString() }}</span>
+                  <span class="text-xl font-black text-emerald-600">{{ formatCurrency(calculateChange) }}</span>
                 </div>
                 
                 <div v-if="cashReceived > 0 && cashReceived < remainingAmount" class="mt-2 text-xs font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100 flex items-center gap-2">
                   <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                  <span>Monto insuficiente. Deberás agregar otro pago por ${{ (remainingAmount - cashReceived).toLocaleString() }}</span>
+                  <span>Monto insuficiente. Deberás agregar otro pago por {{ formatCurrency(remainingAmount - cashReceived) }}</span>
                 </div>
 
                 <div v-if="calculateChange > cashBalance" class="mt-2 text-xs font-bold text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100 flex items-center gap-2 animate-pulse">
                   <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   <div>
                     <p>¡No hay suficiente dinero en caja para dar vueltas!</p>
-                    <p class="font-normal mt-0.5 text-[10px]">Disponible: ${{ cashBalance.toLocaleString() }} | Requerido: ${{ calculateChange.toLocaleString() }}</p>
+                    <p class="font-normal mt-0.5 text-[10px]">Disponible: {{ formatCurrency(cashBalance) }} | Requerido: {{ formatCurrency(calculateChange) }}</p>
                   </div>
                 </div>
               </div>
@@ -319,6 +319,7 @@
 import { ref, computed, watch } from 'vue'
 import { customersApi } from '@/api/customers'
 import { useToast } from '@/composables/useToast'
+import { useCurrency } from '@/composables/useCurrency'
 import CustomerCreateModal from '@/components/customers/CustomerCreateModal.vue'
 import { 
   UserIcon, 
@@ -328,6 +329,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const { success, error } = useToast()
+const { formatCurrency } = useCurrency()
 
 const props = defineProps({
   show: Boolean,

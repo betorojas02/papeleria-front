@@ -98,7 +98,7 @@
             <p class="text-xs text-slate-400 mb-2">{{ product.category?.name }}</p>
             
             <div class="mt-auto flex items-end justify-between">
-              <span class="text-base font-bold text-primary-700">${{ product.price.toLocaleString() }}</span>
+              <span class="text-base font-bold text-primary-700">{{ formatCurrency(product.price) }}</span>
               <div 
                 class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
                 :class="product.stock > 0 ? 'bg-slate-100 text-slate-400 group-hover:bg-primary-600 group-hover:text-white' : 'bg-slate-100 text-slate-300'"
@@ -245,6 +245,7 @@ import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { useCurrency } from '@/composables/useCurrency'
 import { productsApi } from '@/api/products'
 import { categoriesApi } from '@/api/categories'
 import { salesApi } from '@/api/sales'
@@ -262,6 +263,7 @@ const router = useRouter()
 const cartStore = useCartStore()
 const authStore = useAuthStore()
 const { success, error } = useToast()
+const { formatCurrency } = useCurrency()
 
 const products = ref([])
 const categories = ref([])
@@ -301,9 +303,13 @@ const selectCategory = async (category) => {
       ? await productsApi.getByCategory(category.id)
       : await productsApi.getAll()
       
-    // Filter active and stock>0 is handled by backend or manually here?
-    // Let's filter manually to be safe based on previous logic
-    products.value = data.data.filter(p => p.isActive)
+    // Handle different response structures
+    // getByCategory returns: { data: [...] }
+    // getAll returns: { data: { data: [...], meta: {...} } }
+    const productsList = category ? data.data : data.data.data
+    
+    // Filter active products
+    products.value = (productsList || []).filter(p => p.isActive)
   } catch (err) {
     console.error('Error loading products:', err)
     error(err.customMessage || err.message || 'Error al cargar productos')

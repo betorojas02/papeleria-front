@@ -182,7 +182,7 @@
                 </td>
                 <td class="py-2 px-3 font-medium text-slate-800">{{ product.name }}</td>
                 <td class="py-2 px-3 text-right text-slate-600">{{ product.totalSold }}</td>
-                <td class="py-2 px-3 text-right font-bold text-primary-600">${{ product.revenue.toLocaleString() }}</td>
+                <td class="py-2 px-3 text-right font-bold text-primary-600">{{ formatCurrency(product.revenue) }}</td>
               </tr>
               <tr v-if="topProducts.length === 0 && !isLoading">
                 <td colspan="4" class="py-12 text-center text-slate-400">
@@ -197,7 +197,7 @@
         </div>
       </AppCard>
 
-      <!-- Recent Sales (Always shows global recent sales, maybe unaffected by filter? Or should affect? Let's keep it mostly recent but allow filter if desirable. User asked to can filter 'each table'. Let's filter recent sales too if API supports it, currently API takes limit only. Ah, DashboardService.getRecentSales only takes limit. Let's keep it as 'Recent Sales'      <!-- Recent Sales -->
+      <!-- Recent Sales -->
       <AppCard>
         <template #header>
           <div>
@@ -231,7 +231,7 @@
                   {{ formatDate(sale.createdAt) }}
                 </td>
                 <td class="py-2 px-3 text-right font-bold text-slate-800">
-                  ${{ sale.total.toLocaleString() }}
+                  {{ formatCurrency(sale.total) }}
                 </td>
               </tr>
                <tr v-if="recentSales.length === 0 && !isLoading">
@@ -254,6 +254,7 @@
 import { ref, reactive, computed } from 'vue'
 import { dashboardApi } from '@/api/dashboard'
 import { useToast } from '@/composables/useToast'
+import { useCurrency } from '@/composables/useCurrency'
 import AppCard from '@/components/common/AppCard.vue'
 import StatCard from '@/components/dashboard/StatCard.vue'
 import LineChart from '@/components/dashboard/LineChart.vue'
@@ -270,6 +271,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const { error } = useToast()
+const { formatCurrency } = useCurrency()
 
 const stats = reactive({
   totalSales: 0,

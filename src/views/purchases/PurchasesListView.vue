@@ -139,12 +139,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { purchasesApi } from '@/api/purchases'
 import { useToast } from '@/composables/useToast'
+import { useCurrency } from '@/composables/useCurrency'
 import AppButton from '@/components/common/AppButton.vue'
 import AppCard from '@/components/common/AppCard.vue'
 import { MagnifyingGlassIcon, ArchiveBoxXMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 
-
 const { error } = useToast()
+const { formatCurrency } = useCurrency()
 const purchases = ref([])
 const loading = ref(false)
 const search = ref('')
@@ -207,9 +208,6 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString()
 }
 
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(value)
-}
 
 onMounted(() => {
   loadPurchases()
