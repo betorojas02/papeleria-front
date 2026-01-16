@@ -196,10 +196,11 @@ const loadData = async () => {
   try {
      const [suppliersRes, productsRes] = await Promise.all([
         suppliersApi.getAll(),
-        productsApi.getAll()
+        productsApi.getAll(1, 1000) // Get first 1000 products for search
      ])
      suppliers.value = suppliersRes.data.data
-     products.value = productsRes.data.data
+     // Extract products from paginated response
+     products.value = productsRes.data.data.data || productsRes.data.data
   } catch (err) {
      console.error(err)
      error('Error al cargar datos necesarios')

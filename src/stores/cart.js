@@ -24,35 +24,38 @@ export const useCartStore = defineStore('cart', () => {
         return total.value - totalPaid.value
     })
 
-    function addItem(product, quantity = 1) {
-        const existingItem = items.value.find(item => item.id === product.id)
+    function addItem(item, quantity = 1, itemType = 'product') {
+        const existingItem = items.value.find(cartItem =>
+            cartItem.id === item.id && cartItem.itemType === itemType
+        )
 
         if (existingItem) {
             existingItem.quantity += quantity
         } else {
             items.value.push({
-                id: product.id,
-                name: product.name,
-                price: product.price,
+                id: item.id,
+                name: item.name,
+                price: item.price,
                 quantity,
-                stock: product.stock,
+                itemType, // 'product' or 'service'
+                stock: item.stock || null, // Services don't have stock
             })
         }
     }
 
-    function removeItem(productId) {
-        const index = items.value.findIndex(item => item.id === productId)
+    function removeItem(itemId) {
+        const index = items.value.findIndex(item => item.id === itemId)
         if (index > -1) {
             items.value.splice(index, 1)
         }
     }
 
-    function updateQuantity(productId, quantity) {
-        const item = items.value.find(item => item.id === productId)
+    function updateQuantity(itemId, quantity) {
+        const item = items.value.find(item => item.id === itemId)
         if (item) {
             item.quantity = quantity
             if (item.quantity <= 0) {
-                removeItem(productId)
+                removeItem(itemId)
             }
         }
     }

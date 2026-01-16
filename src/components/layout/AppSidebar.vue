@@ -92,7 +92,8 @@ import {
   CurrencyDollarIcon,
   Squares2X2Icon,
   TruckIcon,
-  ClipboardDocumentCheckIcon
+  ClipboardDocumentCheckIcon,
+  WrenchScrewdriverIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -111,6 +112,7 @@ const menuGroups = computed(() => {
       title: 'Inventario',
       items: [
         { name: 'Productos', to: '/products', icon: ShoppingBagIcon },
+        { name: 'Servicios', to: '/services', icon: WrenchScrewdriverIcon },
         { name: 'Categorías', to: '/categories', icon: Squares2X2Icon },
         { name: 'Marcas', to: '/brands', icon: TagIcon },
         { name: 'Proveedores', to: '/suppliers', icon: TruckIcon },

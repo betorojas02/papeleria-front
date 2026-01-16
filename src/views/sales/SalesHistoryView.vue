@@ -134,22 +134,33 @@
             <div>
               <h4 class="font-bold text-slate-800 text-sm mb-3">Productos</h4>
               <div class="space-y-3">
-                <div 
-                v-for="item in selectedSale.items" 
+                <div
+                v-for="item in selectedSale.items"
                 :key="item.id"
-                class="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-primary-100 transition-colors"
+                :class="[
+                  'flex items-center justify-between p-3 rounded-lg border transition-colors',
+                  item.itemType === 'service' 
+                    ? 'border-blue-100 bg-blue-50/30 hover:border-blue-200' 
+                    : 'border-slate-100 hover:border-primary-100'
+                ]"
               >
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-bold">
                     x{{ item.quantity }}
                   </div>
                   <div>
-                    <div class="font-medium text-slate-800 text-sm">{{ item.product?.name || 'Producto eliminado' }}</div>
-                    <div class="text-xs text-slate-400">{{ formatCurrency(item.price || 0) }} c/u</div>
+                    <div class="flex items-center gap-1.5">
+                      <span v-if="item.itemType === 'service'" class="text-xs">🔧</span>
+                      <span v-else class="text-xs">📦</span>
+                      <div class="font-medium text-slate-800 text-sm">
+                        {{ item.product?.name || item.service?.name || 'Item eliminado' }}
+                      </div>
+                    </div>
+                    <div class="text-xs text-slate-400">{{ formatCurrency(item.unitPrice || 0) }} c/u</div>
                   </div>
                 </div>
                 <div class="font-bold text-slate-800 text-sm">
-                  {{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}
+                  {{ formatCurrency((item.quantity || 0) * (item.unitPrice || 0)) }}
                 </div>
               </div>
             </div>

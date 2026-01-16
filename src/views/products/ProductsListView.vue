@@ -32,19 +32,19 @@
         <AppSelect
           v-model="filters.category"
           :options="categoryOptions"
-          @update:modelValue="loadProducts"
+          @update:modelValue="() => loadProducts()"
         />
         
         <AppSelect
           v-model="filters.brand"
           :options="brandOptions"
-          @update:modelValue="loadProducts"
+          @update:modelValue="() => loadProducts()"
         />
         
         <AppSelect
           v-model="filters.stockStatus"
           :options="stockStatusOptions"
-          @update:modelValue="loadProducts"
+          @update:modelValue="() => loadProducts()"
         />
         
         <AppButton variant="secondary" @click="clearFilters" full-width>

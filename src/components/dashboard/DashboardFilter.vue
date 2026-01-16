@@ -118,9 +118,17 @@ const getDatesForPeriod = (period) => {
       break
   }
 
+  // Convert to YYYY-MM-DD format for backend
+  const formatDate = (date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   return {
-    startDate: start.toISOString(),
-    endDate: end.toISOString(),
+    startDate: formatDate(start),
+    endDate: formatDate(end),
     label: periods.find(p => p.value === period)?.label
   }
 }
@@ -134,19 +142,10 @@ const selectPeriod = (period) => {
 const applyCustomRange = () => {
   if (!customStart.value || !customEnd.value) return
 
-  // Set times to start/end of selected days
-  const start = new Date(customStart.value)
-  start.setHours(0, 0, 0, 0)
-  // Fix timezone offset issue by treating input as local
-  const userStart = new Date(start.getTime() + start.getTimezoneOffset() * 60000)
-  
-  const end = new Date(customEnd.value)
-  end.setHours(23, 59, 59, 999)
-  const userEnd = new Date(end.getTime() + end.getTimezoneOffset() * 60000)
-
+  // Date inputs already provide YYYY-MM-DD format, use them directly
   emit('change', {
-    startDate: userStart.toISOString(),
-    endDate: userEnd.toISOString(),
+    startDate: customStart.value,
+    endDate: customEnd.value,
     label: `${customStart.value} - ${customEnd.value}`
   })
 }

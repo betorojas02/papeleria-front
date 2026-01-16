@@ -6,4 +6,12 @@ export const dashboardApi = {
     getTopProducts: (limit = 5, params) => apiClient.get(`/dashboard/top-products`, { params: { limit, ...params } }),
     getSalesByCategory: (params) => apiClient.get('/dashboard/sales-by-category', { params }),
     getRecentSales: (limit = 10, params) => apiClient.get(`/dashboard/recent-sales`, { params: { limit, ...params } }),
+
+    // New: Services analytics
+    getTopItems: (params) => apiClient.get('/dashboard/top-items', { params }),
+    getItemsBreakdown: (params) => apiClient.get('/dashboard/items-breakdown', { params }),
+
+    // New: Payment methods and stock alerts
+    getPaymentMethods: (params) => apiClient.get('/dashboard/payment-methods', { params }),
+    getLowStock: (params) => apiClient.get('/dashboard/low-stock', { params }),
 }

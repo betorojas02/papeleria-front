@@ -1,9 +1,35 @@
 <template>
   <div class="h-[calc(100vh-6rem)] flex flex-col lg:flex-row gap-6 overflow-hidden">
-    <!-- Left Panel: Products -->
+    <!-- Left Panel: Products/Services -->
     <div class="flex-1 flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-      <!-- Search & Categories Header -->
-      <div class="p-4 border-b border-slate-100 space-y-4">
+      <!-- Tabs -->
+      <div class="flex border-b border-slate-200 bg-slate-50/50">
+        <button
+          @click="activeTab = 'products'"
+          :class="[
+            'flex-1 px-4 py-3 text-sm font-bold transition-all',
+            activeTab === 'products'
+              ? 'bg-white text-primary-600 border-b-2 border-primary-600'
+              : 'text-slate-500 hover:text-slate-700'
+          ]"
+        >
+          📦 Productos
+        </button>
+        <button
+          @click="activeTab = 'services'"
+          :class="[
+            'flex-1 px-4 py-3 text-sm font-bold transition-all',
+            activeTab === 'services'
+              ? 'bg-white text-primary-600 border-b-2 border-primary-600'
+              : 'text-slate-500 hover:text-slate-700'
+          ]"
+        >
+          🔧 Servicios
+        </button>
+      </div>
+
+      <!-- Search & Categories Header (Products only) -->
+      <div v-if="activeTab === 'products'" class="p-4 border-b border-slate-100 space-y-4">
         <!-- Register Info Bar -->
         <div v-if="currentRegister" class="flex items-center justify-between bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100 mb-2">
           <div class="flex items-center gap-2">
@@ -58,8 +84,23 @@
         </div>
       </div>
 
+      <!-- Services Search (Services tab only) -->
+      <div v-if="activeTab === 'services'" class="p-4 border-b border-slate-100">
+        <div class="relative">
+          <input
+            v-model="serviceSearch"
+            type="text"
+            placeholder="Buscar servicios..."
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm"
+          />
+          <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+
       <!-- Products Grid -->
-      <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+      <div v-if="activeTab === 'products'" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
         <div v-if="loading" class="flex items-center justify-center h-full">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
@@ -109,6 +150,50 @@
           </button>
         </div>
       </div>
+
+      <!-- Services Grid -->
+      <div v-if="activeTab === 'services'" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+        <div v-if="loading" class="flex items-center justify-center h-full">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+
+        <div v-else-if="services.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400">
+          <svg class="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
+          </svg>
+          <p>No hay servicios disponibles</p>
+        </div>
+
+        <div v-else class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          <button
+            v-for="service in filteredServices"
+            :key="service.id"
+            @click="addServiceToCart(service)"
+            class="group relative flex flex-col bg-white border border-slate-100 rounded-xl hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 p-3 text-left"
+          >
+            <!-- Service Badge -->
+            <div class="absolute top-2 right-2">
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                🔧
+              </span>
+            </div>
+
+            <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mb-3 text-blue-600 group-hover:scale-110 transition-transform">
+              <span class="font-bold text-sm">{{ service.name.substring(0, 2).toUpperCase() }}</span>
+            </div>
+            
+            <h3 class="font-semibold text-slate-800 text-sm leading-tight mb-1 line-clamp-2 min-h-[2.5em]">{{ service.name }}</h3>
+            <p class="text-xs text-slate-400 mb-2 line-clamp-1">{{ service.description || 'Servicio' }}</p>
+            
+            <div class="mt-auto flex items-end justify-between">
+              <span class="text-base font-bold text-blue-700">{{ formatCurrency(service.price) }}</span>
+              <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-400 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center transition-colors">
+                <PlusIcon class="w-4 h-4" />
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Right Panel: Cart -->
@@ -134,20 +219,36 @@
 
         <div
           v-for="item in cartStore.items"
-          :key="item.id"
-          class="flex gap-3 p-3 bg-white border border-slate-100 rounded-xl hover:border-primary-100 transition-colors group"
+          :key="item.id + '-' + item.itemType"
+          :class="[
+            'flex gap-3 p-3 rounded-xl transition-colors group border',
+            item.itemType === 'service'
+              ? 'bg-blue-50/30 border-blue-100 hover:border-blue-200'
+              : 'bg-white border-slate-100 hover:border-primary-100'
+          ]"
         >
           <div class="flex-1 min-w-0">
-            <h4 class="font-medium text-slate-800 text-sm truncate">{{ item.name }}</h4>
+            <div class="flex items-center gap-1.5 mb-0.5">
+              <span v-if="item.itemType === 'service'" class="text-xs">🔧</span>
+              <span v-else class="text-xs">📦</span>
+              <h4 class="font-medium text-slate-800 text-sm truncate">{{ item.name }}</h4>
+            </div>
             <div class="flex items-center gap-2 mt-1">
-              <span class="text-xs font-medium text-primary-600">${{ (item.price * item.quantity).toLocaleString() }}</span>
-              <span class="text-[10px] text-slate-400">${{ item.price.toLocaleString() }} c/u</span>
+              <span
+                :class="[
+                  'text-xs font-medium',
+                  item.itemType === 'service' ? 'text-blue-600' : 'text-primary-600'
+                ]"
+              >
+                {{ formatCurrency(item.price * item.quantity) }}
+              </span>
+              <span class="text-[10px] text-slate-400">{{ formatCurrency(item.price) }} c/u</span>
             </div>
           </div>
-          
+
           <div class="flex flex-col items-end gap-2">
             <div class="flex items-center bg-slate-50 rounded-lg p-0.5 border border-slate-200">
-              <button 
+              <button
                 @click="cartStore.updateQuantity(item.id, item.quantity - 1)"
                 class="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm text-slate-600 transition-all disabled:opacity-30"
                 :disabled="item.quantity <= 1"
@@ -247,6 +348,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { useCurrency } from '@/composables/useCurrency'
 import { productsApi } from '@/api/products'
+import { servicesApi } from '@/api/services'
 import { categoriesApi } from '@/api/categories'
 import { salesApi } from '@/api/sales'
 import { cashRegistersApi } from '@/api/cashRegisters'
@@ -265,10 +367,13 @@ const authStore = useAuthStore()
 const { success, error } = useToast()
 const { formatCurrency } = useCurrency()
 
+const activeTab = ref('products')
 const products = ref([])
+const services = ref([])
 const categories = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
+const serviceSearch = ref('')
 const selectedCategory = ref(null)
 const showPaymentDrawer = ref(false)
 const currentRegister = ref(null)
@@ -284,12 +389,32 @@ const filteredProducts = computed(() => {
   )
 })
 
+const filteredServices = computed(() => {
+  if (!serviceSearch.value) return services.value
+  
+  const query = serviceSearch.value.toLowerCase()
+  return services.value.filter(s =>
+    s.name.toLowerCase().includes(query) ||
+    s.description?.toLowerCase().includes(query)
+  )
+})
+
 const loadCategories = async () => {
   try {
     const { data } = await categoriesApi.getAll()
     categories.value = data.data
   } catch (err) {
     console.error('Error loading categories:', err)
+  }
+}
+
+const loadServices = async () => {
+  try {
+    const { data } = await servicesApi.getAll()
+    services.value = data.data
+  } catch (err) {
+    console.error('Error loading services:', err)
+    error(err.customMessage || err.message || 'Error al cargar servicios')
   }
 }
 
@@ -320,8 +445,12 @@ const selectCategory = async (category) => {
 
 const addToCart = (product) => {
   if (product.stock > 0) {
-    cartStore.addItem(product, 1)
+    cartStore.addItem(product, 1, 'product')
   }
+}
+
+const addServiceToCart = (service) => {
+  cartStore.addItem(service, 1, 'service')
 }
 
 const openPaymentDrawer = () => {
@@ -330,7 +459,7 @@ const openPaymentDrawer = () => {
     items: cartStore.items.map(item => ({
       name: item.name,
       price: item.price * item.quantity,
-      type: 'product'
+      type: item.itemType || 'product'
     })),
     total: cartStore.total
   }
@@ -341,10 +470,12 @@ const handlePaymentComplete = async (paymentData) => {
   try {
     const saleData = {
       userId: authStore.user.id,
-      customerId: paymentData.customerId, // Add customerId
+      customerId: paymentData.customerId,
       cashRegisterId: currentRegister.value?.id,
       items: cartStore.items.map(item => ({
-        productId: item.id,
+        itemType: item.itemType || 'product',
+        productId: item.itemType === 'product' ? item.id : undefined,
+        serviceId: item.itemType === 'service' ? item.id : undefined,
         quantity: item.quantity,
         price: item.price,
       })),
@@ -377,6 +508,7 @@ const loadInitialData = async () => {
   try {
     await Promise.all([
       loadCategories(),
+      loadServices(),
       selectCategory(null), // Load all products initially
       loadCashRegister()
     ])

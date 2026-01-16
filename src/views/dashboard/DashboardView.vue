@@ -89,8 +89,111 @@
       </div>
     </section>
 
+    <!-- Section: Products vs Services Breakdown -->
+    <section v-if="itemsBreakdown.length > 0" class="space-y-4">
+      <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        Desglose de Ventas
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <StatCard
+          v-for="item in itemsBreakdown"
+          :key="item.type"
+          :label="item.type === 'product' ? 'Ingresos por Productos' : 'Ingresos por Servicios'"
+          :value="item.revenue"
+          :icon="item.type === 'product' ? ShoppingBagIcon : WrenchScrewdriverIcon"
+          :variant="item.type === 'product' ? 'primary' : 'info'"
+          format="currency"
+          :footer="`${item.totalQuantity} unidades vendidas`"
+        />
+      </div>
+    </section>
+
     <!-- Cash Register Status (Always visible) -->
     <CashRegisterStatus />
+
+    <!-- New Row: Payment Methods & Monthly Goal -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Payment Methods Breakdown -->
+      <AppCard>
+        <template #header>
+          <div>
+            <h3 class="font-bold text-slate-800 text-lg">💳 Métodos de Pago</h3>
+            <p class="text-sm text-slate-500">Distribución de pagos en este período</p>
+          </div>
+        </template>
+        <div class="h-64">
+          <HorizontalBarChart v-if="paymentMethods.length > 0" :data="paymentMethods" />
+          <div v-else class="flex items-center justify-center h-full text-slate-400">
+            <span>Sin datos de métodos de pago</span>
+          </div>
+        </div>
+      </AppCard>
+
+      <!-- Monthly Goal Progress -->
+      <AppCard>
+        <template #header>
+          <div>
+            <h3 class="font-bold text-slate-800 text-lg">🎯 Meta Mensual</h3>
+            <p class="text-sm text-slate-500">Progreso de ventas del mes actual</p>
+          </div>
+        </template>
+        <div class="p-2">
+          <MonthlyGoalProgress :current="stats.totalRevenue" :goal="1000000" />
+        </div>
+      </AppCard>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    <AppCard v-if="lowStockProducts.length > 0">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+              <ExclamationTriangleIcon class="w-5 h-5 text-orange-500" />
+              Alertas de Stock Crítico
+            </h3>
+            <p class="text-sm text-slate-500">Productos que requieren reabastecimiento urgente</p>
+          </div>
+        </div>
+      </template>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-slate-200">
+              <th class="text-left py-2 px-3 text-xs font-bold text-slate-500 uppercase">Producto</th>
+              <th class="text-center py-2 px-3 text-xs font-bold text-slate-500 uppercase">Stock Actual</th>
+              <th class="text-center py-2 px-3 text-xs font-bold text-slate-500 uppercase">Stock Mínimo</th>
+              <th class="text-right py-2 px-3 text-xs font-bold text-slate-500 uppercase">Precio</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="product in lowStockProducts"
+              :key="product.id"
+              class="border-b border-slate-100 last:border-0 hover:bg-orange-50"
+            >
+              <td class="py-2 px-3 font-medium text-slate-800">{{ product.name }}</td>
+              <td class="py-2 px-3 text-center">
+                <span :class="[
+                  'inline-flex items-center px-2 py-1 rounded-full text-xs font-bold',
+                  product.stock === 0 ? 'bg-red-100 text-red-700' :
+                  product.stock <= 3 ? 'bg-orange-100 text-orange-700' :
+                  'bg-yellow-100 text-yellow-700'
+                ]">
+                  {{ product.stock }}
+                </span>
+              </td>
+              <td class="py-2 px-3 text-center text-slate-600">{{ product.minStock }}</td>
+              <td class="py-2 px-3 text-right text-slate-600">{{ formatCurrency(product.price) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </AppCard>
 
     <!-- Analytics Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -148,12 +251,12 @@
 
     <!-- Detailed Lists Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Top Products -->
+      <!-- Top Items (Products + Services) -->
       <AppCard>
         <template #header>
           <div>
-            <h3 class="font-bold text-slate-800 text-lg">🏆 Top Productos Vendidos</h3>
-            <p class="text-sm text-slate-500">Los 5 productos con mayores ingresos en este periodo</p>
+            <h3 class="font-bold text-slate-800 text-lg">🏆 Top Items Vendidos</h3>
+            <p class="text-sm text-slate-500">Los 10 items con mayores ingresos (productos y servicios)</p>
           </div>
         </template>
         <div class="overflow-x-auto relative min-h-[150px]">
@@ -164,31 +267,44 @@
             <thead>
               <tr class="border-b border-slate-200">
                 <th class="text-left py-2 px-3 text-xs font-bold text-slate-500 uppercase">#</th>
-                <th class="text-left py-2 px-3 text-xs font-bold text-slate-500 uppercase">Producto</th>
+                <th class="text-left py-2 px-3 text-xs font-bold text-slate-500 uppercase">Tipo</th>
+                <th class="text-left py-2 px-3 text-xs font-bold text-slate-500 uppercase">Item</th>
                 <th class="text-right py-2 px-3 text-xs font-bold text-slate-500 uppercase">Vendidos</th>
                 <th class="text-right py-2 px-3 text-xs font-bold text-slate-500 uppercase">Ingresos</th>
               </tr>
             </thead>
             <tbody>
               <tr
-                v-for="(product, index) in topProducts"
-                :key="product.id"
-                class="border-b border-slate-100 last:border-0 hover:bg-slate-50"
+                v-for="(item, index) in topItems"
+                :key="item.id + '-' + item.type"
+                :class="[
+                  'border-b border-slate-100 last:border-0 hover:bg-slate-50',
+                  item.type === 'service' ? 'bg-blue-50/20' : ''
+                ]"
               >
                 <td class="py-2 px-3">
                   <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
                     {{ index + 1 }}
                   </span>
                 </td>
-                <td class="py-2 px-3 font-medium text-slate-800">{{ product.name }}</td>
-                <td class="py-2 px-3 text-right text-slate-600">{{ product.totalSold }}</td>
-                <td class="py-2 px-3 text-right font-bold text-primary-600">{{ formatCurrency(product.revenue) }}</td>
+                <td class="py-2 px-3">
+                  <span v-if="item.type === 'service'" class="text-lg" title="Servicio">🔧</span>
+                  <span v-else class="text-lg" title="Producto">📦</span>
+                </td>
+                <td class="py-2 px-3 font-medium text-slate-800">{{ item.name }}</td>
+                <td class="py-2 px-3 text-right text-slate-600">{{ item.totalSold }}</td>
+                <td :class="[
+                  'py-2 px-3 text-right font-bold',
+                  item.type === 'service' ? 'text-blue-600' : 'text-primary-600'
+                ]">
+                  {{ formatCurrency(item.revenue) }}
+                </td>
               </tr>
-              <tr v-if="topProducts.length === 0 && !isLoading">
-                <td colspan="4" class="py-12 text-center text-slate-400">
+              <tr v-if="topItems.length === 0 && !isLoading">
+                <td colspan="5" class="py-12 text-center text-slate-400">
                   <div class="flex flex-col items-center gap-2">
                     <ShoppingBagIcon class="w-8 h-8 opacity-40" />
-                     <span class="font-medium">No hay productos vendidos</span>
+                     <span class="font-medium">No hay items vendidos</span>
                   </div>
                 </td>
               </tr>
@@ -259,6 +375,8 @@ import AppCard from '@/components/common/AppCard.vue'
 import StatCard from '@/components/dashboard/StatCard.vue'
 import LineChart from '@/components/dashboard/LineChart.vue'
 import DoughnutChart from '@/components/dashboard/DoughnutChart.vue'
+import HorizontalBarChart from '@/components/dashboard/HorizontalBarChart.vue'
+import MonthlyGoalProgress from '@/components/dashboard/MonthlyGoalProgress.vue'
 import DashboardFilter from '@/components/dashboard/DashboardFilter.vue'
 import CashRegisterStatus from '@/components/dashboard/CashRegisterStatus.vue'
 import {
@@ -267,7 +385,8 @@ import {
   ShoppingBagIcon,
   ExclamationTriangleIcon,
   ReceiptPercentIcon,
-  CreditCardIcon
+  CreditCardIcon,
+  WrenchScrewdriverIcon
 } from '@heroicons/vue/24/outline'
 
 const { error } = useToast()
@@ -289,7 +408,11 @@ const salesChart = reactive({
 
 const salesByCategory = ref([])
 const topProducts = ref([])
+const topItems = ref([])  // NEW: Combined products + services
+const itemsBreakdown = ref([])  // NEW: Revenue breakdown
 const recentSales = ref([])
+const paymentMethods = ref([])  // NEW: Payment methods breakdown
+const lowStockProducts = ref([])  // NEW: Low stock alerts
 
 const currentFilter = reactive({
   startDate: null,
@@ -303,6 +426,7 @@ const averageTicket = computed(() => {
 })
 
 const isLoading = ref(false)
+const lastUpdated = ref('')
 
 const handleFilterChange = async ({ startDate, endDate, label }) => {
   console.log('Filter Changed:', { startDate, endDate, label })
@@ -318,10 +442,11 @@ const chartKey = ref(0)
 const loadAllData = async () => {
   isLoading.value = true
   console.log('Loading Data with params:', { startDate: currentFilter.startDate, endDate: currentFilter.endDate })
-  const params = {
-    startDate: currentFilter.startDate,
-    endDate: currentFilter.endDate
-  }
+  
+  // Build params object, excluding null values
+  const params = {}
+  if (currentFilter.startDate) params.startDate = currentFilter.startDate
+  if (currentFilter.endDate) params.endDate = currentFilter.endDate
 
   try {
     await Promise.all([
@@ -329,7 +454,11 @@ const loadAllData = async () => {
       loadSalesChart(params),
       loadSalesByCategory(params),
       loadTopProducts(params),
-      loadRecentSales(params)
+      loadTopItems(params),
+      loadItemsBreakdown(params),
+      loadPaymentMethods(params),  // NEW
+      loadRecentSales(params),
+      loadLowStock()  // NEW - no date filter
     ])
     // Force chart update
     chartKey.value++
@@ -384,6 +513,42 @@ const loadRecentSales = async (params) => {
     recentSales.value = data.data
   } catch (err) {
     console.error(err)
+  }
+}
+
+const loadTopItems = async (params) => {
+  try {
+    const { data } = await dashboardApi.getTopItems({ limit: 10, ...params })
+    topItems.value = data.data
+  } catch (err) {
+    console.error('Error loading top items:', err)
+  }
+}
+
+const loadItemsBreakdown = async (params) => {
+  try {
+    const { data } = await dashboardApi.getItemsBreakdown(params)
+    itemsBreakdown.value = data.data
+  } catch (err) {
+    console.error('Error loading items breakdown:', err)
+  }
+}
+
+const loadPaymentMethods = async (params) => {
+  try {
+    const { data } = await dashboardApi.getPaymentMethods(params)
+    paymentMethods.value = data.data
+  } catch (err) {
+    console.error('Error loading payment methods:', err)
+  }
+}
+
+const loadLowStock = async () => {
+  try {
+    const { data } = await dashboardApi.getLowStock({ limit: 10 })
+    lowStockProducts.value = data.data
+  } catch (err) {
+    console.error('Error loading low stock:', err)
   }
 }
 
