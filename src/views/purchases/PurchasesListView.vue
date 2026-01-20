@@ -37,6 +37,7 @@
               <th class="text-right py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Total</th>
               <th class="text-center py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Usuario</th>
               <th class="text-right py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+              <th class="text-center py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
@@ -78,6 +79,15 @@
                 <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700">
                    Recibido
                 </span>
+              </td>
+              <td class="py-3 px-4 text-center">
+                <button 
+                  @click="openDetails(purchase)"
+                  class="text-slate-400 hover:text-primary-600 transition-colors p-1 rounded-full hover:bg-primary-50"
+                  title="Ver Detalles"
+                >
+                  <EyeIcon class="w-5 h-5" />
+                </button>
               </td>
             </tr>
           </tbody>
@@ -132,6 +142,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Purchase Details Drawer -->
+    <PurchaseDetailsDrawer 
+      :show="showDetailsDrawer"
+      :purchase="selectedPurchase"
+      @close="closeDetails"
+    />
   </div>
 </template>
 
@@ -142,13 +159,16 @@ import { useToast } from '@/composables/useToast'
 import { useCurrency } from '@/composables/useCurrency'
 import AppButton from '@/components/common/AppButton.vue'
 import AppCard from '@/components/common/AppCard.vue'
-import { MagnifyingGlassIcon, ArchiveBoxXMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
+import PurchaseDetailsDrawer from '@/components/purchases/PurchaseDetailsDrawer.vue'
+import { MagnifyingGlassIcon, ArchiveBoxXMarkIcon, ChevronLeftIcon, ChevronRightIcon, EyeIcon } from '@heroicons/vue/24/outline'
 
 const { error } = useToast()
 const { formatCurrency } = useCurrency()
 const purchases = ref([])
 const loading = ref(false)
 const search = ref('')
+const showDetailsDrawer = ref(false)
+const selectedPurchase = ref(null)
 let searchTimeout = null
 
 const pagination = ref({
@@ -206,6 +226,18 @@ const nextPage = () => {
 
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString()
+}
+
+const openDetails = (purchase) => {
+  selectedPurchase.value = purchase
+  showDetailsDrawer.value = true
+}
+
+const closeDetails = () => {
+  showDetailsDrawer.value = false
+  setTimeout(() => {
+    selectedPurchase.value = null
+  }, 300)
 }
 
 
